@@ -1,0 +1,1 @@
+# git-stare-react-app
