@@ -4,6 +4,7 @@ import './styles/home.css'
 import Input from './Input';
 import Button from "./Button";
 import axios from 'axios';
+import { stringify } from "querystring";
 
   export interface payload{
     payload :{
@@ -43,28 +44,95 @@ import axios from 'axios';
     avatar_url:string;
     login:string;
   }
-  interface Suggestion{
-    suggestion:string;
-  }
-  
-
+ type userSchema= string | null;
 const SearchBox: React.FC=()=>{
     const [name,setName]=useState<string>('');
     const [data,setData]=useState<Mydata[]>([]);
     const [event,setEvent]=useState<userEvents>();
-    const [suggestions,setSuggestions]=useState<Suggestion[]>([]);
+    const [suggestions,setSuggestions]=useState<string[]>([]);
     const [showSuggestion,setShowSuggestion]=useState<boolean>(false);
     const [activeSuggestion,setActiveSuggestion]=useState<number>(0);
     const [userHistory,setUserHistory]=useState<string[]>([]);
+    const users=localStorage.user;
+    console.log(users);
+    const renderSuggestions=()=>{
+      if(showSuggestion && name){
+          if(suggestions.length){
+              return(
+                  <ul className="suggestions">
+                      {suggestions.map((item,index)=> {
+                         let className;
+                         console.log(index);
+                         if(index===activeSuggestion)
+                         {
+                          className="suggestion-active";
+                         }
+                         return(
+                          <li key={index} className={className}  onClick={()=>setName(item)}>{item}</li>
+                         );
+                      })}
+                  </ul>
+              );
+          }
+          else{
+              return(
+                  <div className="no-suggestions">
+                      <em>No Suggestions</em>
+                  </div>
+              );
+          }
+      }
+      
+  }
+    
+   const onKeyDown=(e: React.KeyboardEvent<HTMLInputElement>):void=>{
 
+      if(e.key==="13")
+      {
+          setName("");
+          setShowSuggestion(false);
+          setActiveSuggestion(0);
+          return;
+      }
+      else if(e.key==="38"){
+          if(activeSuggestion===0){
+              return;
+          }
+         setActiveSuggestion(activeSuggestion-1);
+      }
+      else if(e.key==="40"){
+          if(activeSuggestion-1===suggestions.length){
+              return;
+          }
+         setActiveSuggestion(activeSuggestion+1);
+      }
+     }
+    
    const handleChange=(e: React.FormEvent<HTMLInputElement>): void=>{
+        let filteredList: string[];
         setName(e.currentTarget.value);
+        if(name === "")
+        {
+            filteredList=[];
+        }
+        else{
+          const history = JSON.parse(localStorage.user);
+            filteredList=history.filter((item: any)=>{
+                return item.toLowerCase().includes(name.toLowerCase());
+            })
+            console.log(filteredList);
+        
+        setSuggestions(filteredList);
+        
+        setShowSuggestion(true);
+       
+          }   
     }
     const handleSubmit=(e: React.FormEvent<HTMLFormElement>): void=>{
        e.preventDefault();
-     userHistory.push(name);
-        setUserHistory(userHistory);
-        console.log(userHistory);
+       userHistory.push(name);
+       setUserHistory(userHistory);
+       localStorage.setItem('user',JSON.stringify(userHistory))
        axios.get<Mydata[]>(`https://api.github.com/users/${name}/events`,{
         headers:{
             "Content-Type":"application/json"
@@ -85,11 +153,13 @@ const SearchBox: React.FC=()=>{
     }
     
     return(
+      
         <div className="body-section">
            <form className="search-form" onSubmit={handleSubmit}>
-           <Input type='search' value={name} placeholder='Enter Username' onChange={handleChange}  ></Input>
+           <Input type='search' value={name} placeholder='Enter Username'  onChange={handleChange} onKeyDown={onKeyDown} ></Input>
            <Button type='submit'></Button>
-        </form>
+           </form>
+           <div>{renderSuggestions()}</div>
         <div className="activity-section">
            <div className="activity-section-header">
               <a href={event?.html_url} target="_blank">

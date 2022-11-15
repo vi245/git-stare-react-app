@@ -89,3 +89,12 @@ a{
     color: black;
     padding: 4px;
 }
+.suggestions{
+    background-color: #c2c5aa;
+    color: black;
+}
+.suggestion-active{
+    background-color: gray;
+    color: black;
+    cursor: pointer;
+}
